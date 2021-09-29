@@ -14,7 +14,7 @@ func main() {
 	}
 
 	// method2
-	files2, _ := filepath.Glob("*")
+	files2, _ := filepath.Glob("*.go")
 	fmt.Println(files2)
 	for _, f := range files2 {
 		fmt.Println(f)
