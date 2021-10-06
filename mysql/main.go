@@ -8,7 +8,7 @@ import (
 )
 
 func insert(conn *sql.DB, command string) error {
-	res, err := conn.Query(command)
+	res, err := conn.Query(command) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
 	if err != nil {
 		return err
 	}
