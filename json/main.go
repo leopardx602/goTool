@@ -6,7 +6,7 @@ import (
 )
 
 type Server struct {
-	ServerName string `json:"serverName01"` // only for json output
+	ServerName string `json:"serverName01"` // must uppercase ,only for json output
 	ServerIP   string
 }
 
