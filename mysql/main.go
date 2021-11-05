@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -17,7 +18,16 @@ var (
 	parseTime bool   = true // time.time or string
 )
 
-func createTable(conn *sql.DB) error {
+type Product struct {
+	ID       int       `json:"id"`
+	Name     string    `json:"name"`
+	Price    int       `json:"age"`
+	Image    string    `json:"image"`
+	CreateAt string    `json:"createAt"`
+	UpdateAt time.Time `json:"updateAt"`
+}
+
+func Create(conn *sql.DB) error {
 	sql := `CREATE TABlE table01(
 		id INT NOT NULL AUTO_INCREMENT,
 		name VARCHAR(16) NOT NULL DEFAULT "",
@@ -34,40 +44,50 @@ func createTable(conn *sql.DB) error {
 	return nil
 }
 
-func insert(conn *sql.DB, command string) error {
-	_, err := conn.Exec(command) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
+func Insert(conn *sql.DB, product Product) error {
+	_, err := conn.Exec("INSERT INTO table01 (id, name, price) VALUES (?, ?, ?)", product.ID, product.Name, product.Price) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
 	if err != nil {
+		if strings.Contains(err.Error(), "1062") {
+			fmt.Println("already exists")
+		}
 		return err
 	}
-	//fmt.Println(res)
 	return nil
 }
 
-func sqlSelect(conn *sql.DB, command string) error {
+func Select(conn *sql.DB, command string) error {
 	res, err := conn.Query(command)
 	if err != nil {
 		return err
 	}
 	defer res.Close()
 
+	var products []Product
 	for res.Next() {
 		var product Product
-		err = res.Scan(&product.ID, &product.Name, &product.Price, &product.Image, &product.CreateAt, &product.UpdateAt)
-		if err != nil {
+		if err := res.Scan(&product.ID, &product.Name, &product.Price, &product.Image, &product.CreateAt, &product.UpdateAt); err != nil {
 			return err
 		}
-		fmt.Println(product)
+		products = append(products, product)
+	}
+	fmt.Println(products)
+	return nil
+}
+
+func Update(conn *sql.DB, product Product) error {
+	_, err := conn.Exec("UPDATE table01 SET name=?, price=?, image=? WHERE id=?", product.Name, product.Price, product.Image, product.ID) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-type Product struct {
-	ID       int       `json:"id"`
-	Name     string    `json:"name"`
-	Price    int       `json:"age"`
-	Image    string    `json:"image"`
-	CreateAt string    `json:"createAt"`
-	UpdateAt time.Time `json:"updateAt"`
+func Delete(conn *sql.DB, id int) error {
+	_, err := conn.Exec("DELETE FROM table01 WHERE id=?", id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -79,28 +99,34 @@ func main() {
 	defer conn.Close()
 
 	// create talble
-	// err = createTable(conn)
-	// if err != nil {
+	// if err = Create(conn); err != nil {
 	// 	fmt.Println(err)
 	// }
 
 	// insert
-	// err = insert(conn, "INSERT INTO table01(name, price, image) VALUES ('apple12', 1000, '')")
-	// if err != nil {
+	if err = Insert(conn, Product{ID: 2, Name: "iphone2", Price: 2000}); err != nil {
+		fmt.Println(err)
+	}
+
+	// // update
+	// if err = Update(conn, Product{ID: 2, Name: "iphone2", Price: 3000}); err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	// // delete
+	// if err = Delete(conn, 1); err != nil {
 	// 	fmt.Println(err)
 	// }
 
 	// select
-	err = sqlSelect(conn, "SELECT * FROM table01")
-	if err != nil {
+	if err = Select(conn, "SELECT * FROM table01"); err != nil {
 		fmt.Println(err)
 	}
 
-	// select one
+	// // select one
 	// var product Product
-	// err = conn.QueryRow("SELECT name, price FROM table01 where name = ?", "apple12").Scan(&product.Name, &product.Price)
-	// if err != nil {
+	// if err = conn.QueryRow("SELECT name, price FROM table01 where id = ?", 1).Scan(&product.Name, &product.Price); err != nil {
 	// 	fmt.Println(err)
 	// }
-	// fmt.Println(product.Price, product.Name)
+	// fmt.Println(product.Name, product.Price)
 }
