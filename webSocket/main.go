@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -9,24 +10,22 @@ import (
 )
 
 func Echo(ws *websocket.Conn) {
-	var err error
 	fmt.Println("open now")
-
 	for {
 		var reply string
-		fmt.Println("open now")
-
-		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			fmt.Println("Can't receive")
+		if err := websocket.Message.Receive(ws, &reply); err != nil {
+			if err == io.EOF {
+				fmt.Println("Client disconnected")
+			} else {
+				fmt.Println("Fail to receive: ", err)
+			}
 			break
 		}
-
 		fmt.Println("Received back from client: " + reply)
 
 		msg := "Received:  " + reply
 		fmt.Println("Sending to client: " + msg)
-
-		if err = websocket.Message.Send(ws, msg); err != nil {
+		if err := websocket.Message.Send(ws, msg); err != nil {
 			fmt.Println("Can't send")
 			break
 		}
