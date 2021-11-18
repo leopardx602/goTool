@@ -8,18 +8,21 @@ import (
 	"github.com/gorilla/sessions"
 )
 
+//var store = sessions.NewFilesystemStore("./", securecookie.GenerateRandomKey(32), securecookie.GenerateRandomKey(32))
+
 var store *sessions.CookieStore
 
 func init() {
-	store = sessions.NewCookieStore([]byte("secret-key"))
+	//store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32), securecookie.GenerateRandomKey(32))
+	store = sessions.NewCookieStore([]byte("key1234"))
 }
 
 func main() {
 	http.HandleFunc("/home", home)
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/logout", logout)
-	fmt.Println("session server run on port 8080")
-	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+	fmt.Println("session server run on port 8000")
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
