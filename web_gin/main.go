@@ -82,5 +82,8 @@ func main() {
 		ctx.JSON(200, gin.H{"status": "OK"})
 	})
 
+	// css javascript
+	//router.Static("/static", "./static")
+
 	router.Run(":5000")
 }
