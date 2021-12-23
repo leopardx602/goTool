@@ -39,8 +39,7 @@ func main() {
 	http.HandleFunc("/", index) //設定存取的路由
 	http.HandleFunc("/get", getData)
 	http.HandleFunc("/post", postData)
-	err := http.ListenAndServe(":5000", nil) //設定監聽的埠
-	if err != nil {
+	if err := http.ListenAndServe(":5000", nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
