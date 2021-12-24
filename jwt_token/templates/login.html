@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<head>
+  <title>Login</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script>
+		$(document).ready(()=>{
+			console.log(window.localStorage.getItem('access_token'))
+			document.getElementById("submit").onclick = function(){
+				var userData = {
+					"username":$("#username").val(), 
+					"password":$("#password").val()
+				}
+				$.ajax({
+					type:"POST",
+					url:"/login",
+					data: JSON.stringify(userData),
+  				dataType: "json",
+  				contentType : "application/json",
+  				success: function(data){
+						window.localStorage.setItem('access_token', data.token)
+						console.log("success", data.token)
+					}
+				})
+			}
+		})
+	</script>
+</head>
+<body>
+	<h1>Login</h1>
+	<label for="username">User name</label>
+	<input type="text" id="username" name="username">
+	<label for="password">Password</label>
+	<input type="password" id="password" name="password">
+	<button id="submit">Login</button>
+</body>

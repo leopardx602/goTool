@@ -13,21 +13,30 @@ import (
 
 // custom claims
 type Claims struct {
-	Account string `json:"account"`
-	Role    string `json:"role"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
 	jwt.StandardClaims
 }
 
 // jwt secret key
 var jwtSecret = []byte("secret")
 
+var users = map[string]string{
+	"username": "password",
+	"user0001": "12345678",
+}
+
 func main() {
 	router := gin.Default()
+	router.LoadHTMLGlob("templates/*.html")
+	router.GET("/login", func(ctx *gin.Context) {
+		ctx.HTML(200, "login.html", gin.H{})
+	})
 
 	router.POST("/login", func(c *gin.Context) {
 		// validate request body
 		var body struct {
-			Account  string
+			Username string
 			Password string
 		}
 		if err := c.ShouldBindJSON(&body); err != nil {
@@ -37,44 +46,52 @@ func main() {
 			return
 		}
 
-		// check account and password is correct
-		if body.Account == "username" && body.Password == "password" {
-			now := time.Now()
-			jwtId := body.Account + strconv.FormatInt(now.Unix(), 10)
-			role := "Member"
-
-			// set claims and sign
-			claims := Claims{
-				Account: body.Account,
-				Role:    role,
-				StandardClaims: jwt.StandardClaims{
-					Audience:  body.Account,
-					ExpiresAt: now.Add(20 * time.Second).Unix(),
-					Id:        jwtId,
-					IssuedAt:  now.Unix(),
-					Issuer:    "ginJWT",
-					NotBefore: now.Add(10 * time.Second).Unix(),
-					Subject:   body.Account,
-				},
-			}
-			tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-			token, err := tokenClaims.SignedString(jwtSecret)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": err.Error(),
-				})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"token": token,
+		// Check the username.
+		if _, ok := users[body.Username]; !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid user",
 			})
 			return
 		}
 
-		// incorrect account or password
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Unauthorized",
+		// Check the password.
+		if users[body.Username] != body.Password {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
+			})
+			return
+		}
+
+		// Generate the token
+		now := time.Now()
+		jwtId := body.Username + strconv.FormatInt(now.Unix(), 10)
+		role := "Member"
+
+		// set claims and sign
+		claims := Claims{
+			Username: body.Username,
+			Role:     role,
+			StandardClaims: jwt.StandardClaims{
+				Audience:  body.Username,
+				ExpiresAt: now.Add(20 * time.Second).Unix(),
+				Id:        jwtId,
+				IssuedAt:  now.Unix(),
+				Issuer:    "ginJWT",
+				NotBefore: now.Add(10 * time.Second).Unix(),
+				Subject:   body.Username,
+			},
+		}
+		tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		token, err := tokenClaims.SignedString(jwtSecret)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"token": token,
 		})
 	})
 
@@ -83,7 +100,7 @@ func main() {
 	authorized.Use(AuthRequired)
 	{
 		authorized.GET("/member/profile", func(c *gin.Context) {
-			if c.MustGet("account") == "username" && c.MustGet("role") == "Member" {
+			if c.MustGet("username") == "username" && c.MustGet("role") == "Member" {
 				c.JSON(http.StatusOK, gin.H{
 					"name":  "username",
 					"age":   23,
@@ -97,13 +114,21 @@ func main() {
 			})
 		})
 	}
-
 	router.Run()
 }
 
 // validate JWT
 func AuthRequired(c *gin.Context) {
 	auth := c.GetHeader("Authorization")
+
+	data := strings.Split(auth, "Bearer ")
+	if len(data) != 2 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		c.Abort()
+		return
+	}
 	token := strings.Split(auth, "Bearer ")[1]
 
 	// parse and validate token for six things:
@@ -142,9 +167,9 @@ func AuthRequired(c *gin.Context) {
 	}
 
 	if claims, ok := tokenClaims.Claims.(*Claims); ok && tokenClaims.Valid {
-		fmt.Println("account:", claims.Account)
+		fmt.Println("username:", claims.Username)
 		fmt.Println("role:", claims.Role)
-		c.Set("account", claims.Account)
+		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
 		c.Next()
 	} else {
