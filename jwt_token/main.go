@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -29,8 +28,12 @@ var users = map[string]string{
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
-	router.GET("/login", func(ctx *gin.Context) {
-		ctx.HTML(200, "login.html", gin.H{})
+	router.GET("/", func(c *gin.Context) {
+		c.SetCookie("gin_cookie", "test", 3600, "/", "localhost:8080", false, true)
+		c.String(200, "OK")
+	})
+	router.GET("/login", func(c *gin.Context) {
+		c.HTML(200, "login.html", gin.H{})
 	})
 
 	router.POST("/login", func(c *gin.Context) {
@@ -73,11 +76,11 @@ func main() {
 			Role:     role,
 			StandardClaims: jwt.StandardClaims{
 				Audience:  body.Username,
-				ExpiresAt: now.Add(20 * time.Second).Unix(),
+				ExpiresAt: now.Add(3600 * time.Second).Unix(),
 				Id:        jwtId,
 				IssuedAt:  now.Unix(),
 				Issuer:    "ginJWT",
-				NotBefore: now.Add(10 * time.Second).Unix(),
+				NotBefore: now.Add(5 * time.Second).Unix(),
 				Subject:   body.Username,
 			},
 		}
@@ -90,9 +93,13 @@ func main() {
 			return
 		}
 
+		//c.SetCookie("token_123", token, 3600, "/", "localhost", false, true)
+		fmt.Println(token)
+		c.SetCookie("token", token, 3600, "/", "localhost:8080", false, true)
 		c.JSON(http.StatusOK, gin.H{
 			"token": token,
 		})
+		//c.Redirect(http.StatusOK, "/member/profile")
 	})
 
 	// protected member router
@@ -119,17 +126,28 @@ func main() {
 
 // validate JWT
 func AuthRequired(c *gin.Context) {
-	auth := c.GetHeader("Authorization")
 
-	data := strings.Split(auth, "Bearer ")
-	if len(data) != 2 {
+	token, err := c.Cookie("token")
+	if err != nil {
+		fmt.Println("Fail to get token")
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "Unauthorized",
 		})
 		c.Abort()
 		return
 	}
-	token := strings.Split(auth, "Bearer ")[1]
+	fmt.Println(token)
+
+	// auth := c.GetHeader("Authorization")
+	// data := strings.Split(auth, "Bearer ")
+	// if len(data) != 2 {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{
+	// 		"message": "Unauthorized",
+	// 	})
+	// 	c.Abort()
+	// 	return
+	// }
+	// token := strings.Split(auth, "Bearer ")[1]
 
 	// parse and validate token for six things:
 	// validationErrorMalformed => token is malformed
