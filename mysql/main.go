@@ -3,10 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -28,7 +27,7 @@ type Product struct {
 }
 
 func Create(conn *sql.DB) error {
-	sql := `CREATE TABlE table01(
+	sql := `CREATE TABlE IF NOT EXISTS table01(
 		id INT NOT NULL AUTO_INCREMENT,
 		name VARCHAR(16) NOT NULL DEFAULT "",
 		price INT DEFAULT 0,
@@ -47,10 +46,12 @@ func Create(conn *sql.DB) error {
 func Insert(conn *sql.DB, product Product) error {
 	_, err := conn.Exec("INSERT INTO table01 (id, name, price) VALUES (?, ?, ?)", product.ID, product.Name, product.Price) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
 	if err != nil {
-		if strings.Contains(err.Error(), "1062") {
-			fmt.Println("already exists")
+		if driverErr, ok := err.(*mysql.MySQLError); ok {
+			if driverErr.Number == 1062 {
+				fmt.Println("already exists")
+				return nil
+			}
 		}
-		return err
 	}
 	return nil
 }
