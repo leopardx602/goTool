@@ -83,7 +83,7 @@ func main() {
 	})
 
 	// css javascript
-	//router.Static("/static", "./static")
+	router.Static("/static", "./static")
 
 	router.Run(":5000")
 }

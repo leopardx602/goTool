@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -29,7 +30,6 @@ func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", func(c *gin.Context) {
-		c.SetCookie("gin_cookie", "test", 3600, "/", "localhost:8080", false, true)
 		c.String(200, "OK")
 	})
 	router.GET("/login", func(c *gin.Context) {
@@ -70,7 +70,7 @@ func main() {
 		jwtId := body.Username + strconv.FormatInt(now.Unix(), 10)
 		role := "Member"
 
-		// set claims and sign
+		// Set claims and sign
 		claims := Claims{
 			Username: body.Username,
 			Role:     role,
@@ -93,16 +93,14 @@ func main() {
 			return
 		}
 
-		//c.SetCookie("token_123", token, 3600, "/", "localhost", false, true)
 		fmt.Println(token)
 		c.SetCookie("token", token, 3600, "/", "localhost:8080", false, true)
 		c.JSON(http.StatusOK, gin.H{
 			"token": token,
 		})
-		//c.Redirect(http.StatusOK, "/member/profile")
 	})
 
-	// protected member router
+	// Authorized router
 	authorized := router.Group("/")
 	authorized.Use(AuthRequired)
 	{
@@ -124,42 +122,30 @@ func main() {
 	router.Run()
 }
 
-// validate JWT
+// Validate JWT
 func AuthRequired(c *gin.Context) {
-
+	// Get the token from the cookie or the authorization
 	token, err := c.Cookie("token")
 	if err != nil {
-		fmt.Println("Fail to get token")
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Unauthorized",
-		})
-		c.Abort()
-		return
+		fmt.Println("Failed to get the token from the cookie")
+		auth := c.GetHeader("Authorization")
+		data := strings.Split(auth, "Bearer ")
+		if len(data) != 2 {
+			fmt.Println("Failed to get the token from the authorization")
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "Unauthorized",
+			})
+			c.Abort()
+			return
+		}
+		token = strings.Split(auth, "Bearer ")[1]
 	}
 	fmt.Println(token)
 
-	// auth := c.GetHeader("Authorization")
-	// data := strings.Split(auth, "Bearer ")
-	// if len(data) != 2 {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{
-	// 		"message": "Unauthorized",
-	// 	})
-	// 	c.Abort()
-	// 	return
-	// }
-	// token := strings.Split(auth, "Bearer ")[1]
-
-	// parse and validate token for six things:
-	// validationErrorMalformed => token is malformed
-	// validationErrorUnverifiable => token could not be verified because of signing problems
-	// validationErrorSignatureInvalid => signature validation failed
-	// validationErrorExpired => exp validation failed
-	// validationErrorNotValidYet => nbf validation failed
-	// validationErrorIssuedAt => iat validation failed
+	// Parse and validate token
 	tokenClaims, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (i interface{}, err error) {
 		return jwtSecret, nil
 	})
-
 	if err != nil {
 		var message string
 		if ve, ok := err.(*jwt.ValidationError); ok {
