@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,40 +17,42 @@ func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.HTML(200, "index.html", gin.H{})
+		ctx.HTML(http.StatusOK, "index.html", gin.H{})
 	})
 
 	router.GET("/name", func(ctx *gin.Context) {
-		ctx.HTML(200, "index.html", gin.H{"defaultName": "Chen"})
+		ctx.HTML(http.StatusOK, "index.html", gin.H{"defaultName": "Chen"})
 	})
 
-	router.GET("/json", func(ctx *gin.Context) {
-		ctx.JSON(200, gin.H{
-			"key1": "value1",
-			"key2": "value2",
-		})
-		// m := map[string]string{"status": "ok"}
-		// j, _ := json.Marshal(m)
-		// c.Data(http.StatusOK, "application/json", j)
+	router.GET("/string", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello world!")
+	})
+
+	router.GET("/slice", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, []string{"a", "b", "c"})
+	})
+
+	router.GET("/map", func(ctx *gin.Context) {
+		data := map[string]string{"key1": "value1", "key2": "value2"}
+		ctx.JSON(http.StatusOK, data)
+		//ctx.JSON(http.StatusOK, gin.H{"key1": "value1", "key2": "value2"})
 	})
 
 	router.GET("/struct", func(ctx *gin.Context) {
-		var product []Product
-		product = append(product, Product{"apple", 1000, true})
-		product = append(product, Product{"orange", 2000, false})
-		data, err := json.Marshal(product)
-		if err != nil {
-			fmt.Println(err)
+		var product struct {
+			Name  string
+			Price int
 		}
-		ctx.Data(200, "application/json", data)
-
+		product.Name = "iphone"
+		product.Price = 1000
+		ctx.JSON(http.StatusOK, product)
 	})
 
 	// post form
 	router.POST("/service", func(ctx *gin.Context) {
 		data := ctx.PostForm("userName")
 		fmt.Println(data)
-		ctx.JSON(200, gin.H{"status": "OK"})
+		ctx.String(http.StatusOK, "ok")
 	})
 
 	// post struct
@@ -58,7 +60,7 @@ func main() {
 		var product Product
 		ctx.BindJSON(&product)
 		fmt.Println(product)
-		ctx.JSON(200, gin.H{"status": "OK"})
+		ctx.String(http.StatusOK, "ok")
 	})
 
 	// post map
@@ -66,7 +68,7 @@ func main() {
 		product := make(map[string]interface{})
 		ctx.BindJSON(&product)
 		fmt.Println(product)
-		ctx.JSON(200, gin.H{"status": "OK"})
+		ctx.String(http.StatusOK, "ok")
 	})
 
 	router.GET("/img/:filename", func(ctx *gin.Context) {
@@ -79,7 +81,7 @@ func main() {
 		product := make(map[string]interface{})
 		ctx.BindJSON(&product)
 		fmt.Println(product)
-		ctx.JSON(200, gin.H{"status": "OK"})
+		ctx.String(http.StatusOK, "ok")
 	})
 
 	// css javascript
