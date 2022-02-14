@@ -47,7 +47,14 @@ func main() {
 	go server.Serve()
 	defer server.Close()
 
-	router.GET("/socket.io", gin.WrapH(server))
-	router.POST("/socket.io", gin.WrapH(server))
+	//router.GET("/socket.io", gin.WrapH(server))
+	//router.POST("/socket.io", gin.WrapH(server))
+	router.GET("/socket.io/", func(context *gin.Context) {
+		server.ServeHTTP(context.Writer, context.Request)
+	})
+
+	router.POST("/socket.io/", func(context *gin.Context) {
+		server.ServeHTTP(context.Writer, context.Request)
+	})
 	router.Run(":5000")
 }
