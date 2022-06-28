@@ -73,7 +73,11 @@ func readAll(usersCollection *mongo.Collection) error {
 
 func readMany(usersCollection *mongo.Collection) error {
 	filter := primitive.M{"age": primitive.M{"$gt": 2}}
-	cursor, err := usersCollection.Find(context.TODO(), filter)
+	opt := options.Find()
+	opt.SetLimit(10)
+	opt.SetSkip(5)
+
+	cursor, err := usersCollection.Find(context.TODO(), filter, opt)
 	if err != nil {
 		return err
 	}
@@ -95,9 +99,12 @@ func readMany(usersCollection *mongo.Collection) error {
 }
 
 func readOne(usersCollection *mongo.Collection) error {
-	filter := primitive.M{"name": "chen1"}
+	filter := primitive.M{"name": "chen5"}
 	user := User{}
-	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err != nil {
+	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err == mongo.ErrNoDocuments {
+		fmt.Println("not found")
+		return err
+	} else if err != nil {
 		return err
 	}
 	fmt.Println(user)
@@ -187,9 +194,9 @@ func main() {
 	// 	fmt.Println("failed to read:", err)
 	// }
 
-	// if err := readOne(usersCollection); err != nil {
-	// 	fmt.Println("failed to read:", err)
-	// }
+	if err := readOne(usersCollection); err != nil {
+		fmt.Println("failed to read:", err)
+	}
 
 	// if err := update(usersCollection); err != nil {
 	// 	fmt.Println("failed to update:", err)
@@ -207,10 +214,10 @@ func main() {
 	// 	fmt.Println("failed to deleteOne:", err)
 	// }
 
-	count, err := Count(usersCollection)
-	if err != nil {
-		fmt.Println("failed to count", err)
-	}
-	fmt.Println("count:", count)
+	// count, err := Count(usersCollection)
+	// if err != nil {
+	// 	fmt.Println("failed to count", err)
+	// }
+	// fmt.Println("count:", count)
 
 }
