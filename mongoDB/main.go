@@ -3,15 +3,33 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+type User struct {
+	Name    string     `json:"name" bson:"name"`
+	Age     int        `json:"age" bson:"age"`
+	Address *Address   `json:"address" bson:"address,omitempty"`
+	Salary  int        `json:"salary" bson:"salary,omitempty"`
+	Date    *time.Time `json:"date" bson:"date"`
+}
+
+type Address struct {
+	Country string `json:"country" bson:"country"`
+	City    string `json:"city" bson:"city"`
+}
+
 func insertOne(usersCollection *mongo.Collection) error {
-	user := bson.D{{"fullName", "User 1"}, {"age", 30}}
+	user := User{
+		Name: "chen4",
+		Age:  4,
+	}
 	result, err := usersCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		return err
@@ -22,9 +40,9 @@ func insertOne(usersCollection *mongo.Collection) error {
 
 func insertMany(usersCollection *mongo.Collection) error {
 	users := []interface{}{
-		bson.D{{"fullName", "User 2"}, {"age", 25}},
-		bson.D{{"fullName", "User 3"}, {"age", 20}},
-		bson.D{{"fullName", "User 4"}, {"age", 28}},
+		User{Name: "chen4", Age: 4},
+		User{Name: "chen5", Age: 5},
+		User{Name: "chen6", Age: 6},
 	}
 
 	results, err := usersCollection.InsertMany(context.TODO(), users)
@@ -40,83 +58,58 @@ func readAll(usersCollection *mongo.Collection) error {
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(context.TODO())
 
-	var results []bson.M
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	users := []User{}
+	if err = cursor.All(context.TODO(), &users); err != nil {
 		return err
 	}
 
-	for _, result := range results {
-		fmt.Println(result)
+	for _, user := range users {
+		fmt.Println(user)
 	}
 	return nil
 }
 
 func readMany(usersCollection *mongo.Collection) error {
-	filter := bson.D{
-		{"$and",
-			bson.A{
-				bson.D{
-					{"age", bson.D{{"$gt", 25}}},
-				},
-			},
-		},
-	}
+	filter := primitive.M{"age": primitive.M{"$gt": 2}}
 	cursor, err := usersCollection.Find(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
 
-	var results []bson.M
-	if err = cursor.All(context.TODO(), &results); err != nil {
-		return err
-	}
+	users := []User{}
+	// if err = cursor.All(context.TODO(), &users); err != nil {
+	// 	return err
+	// }
 
-	for _, result := range results {
-		fmt.Println(result)
+	for cursor.Next(context.TODO()) {
+		user := User{}
+		if err := cursor.Decode(&user); err != nil {
+			return err
+		}
+		users = append(users, user)
 	}
+	fmt.Println(users)
 	return nil
 }
 
 func readOne(usersCollection *mongo.Collection) error {
-	filter := bson.D{
-		{"$and",
-			bson.A{
-				bson.D{
-					{"age", bson.D{{"$gt", 25}}},
-				},
-			},
-		},
-	}
-
-	// retrieving the first document that match the filter
-	var result bson.M
-	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&result); err != nil {
+	filter := primitive.M{"name": "chen1"}
+	user := User{}
+	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err != nil {
 		return err
 	}
-
-	fmt.Println(result)
+	fmt.Println(user)
 	return nil
 }
 
 func update(usersCollection *mongo.Collection) error {
-	filter := bson.D{
-		{"$and",
-			bson.A{
-				bson.D{
-					{"age", bson.D{{"$gt", 25}}},
-				},
-			},
-		},
-	}
-
-	update := bson.D{
-		{"$set",
-			bson.D{
-				{"age", 40},
-			},
-		},
-	}
+	filter := primitive.M{"name": "chen4", "age": 4}
+	// address := Address{Country: "USA", City: "New York"}
+	// update := primitive.M{"$set": primitive.M{"salary": 1000}} // It is working, even though it is empty or nil
+	// update := primitive.M{"$set": primitive.M{"address.city": "USA"}} // It is working, even though it is empty
+	update := primitive.M{"$set": primitive.M{"address": nil}} // It is working, even though it is empty
 
 	result, err := usersCollection.UpdateOne(context.TODO(), filter, update)
 	// result, err := usersCollection.UpdateMany(context.TODO(), filter, update)
@@ -128,14 +121,8 @@ func update(usersCollection *mongo.Collection) error {
 }
 
 func replaceOne(usersCollection *mongo.Collection) error {
-	filter := bson.D{{"fullName", "User 1"}}
-	replacement := bson.D{
-		{"firstName", "John"},
-		{"lastName", "Doe"},
-		{"age", 30},
-		{"emailAddress", "johndoe@email.com"},
-	}
-
+	filter := primitive.M{"name": "chen"}
+	replacement := User{Name: "chen", Age: 30}
 	result, err := usersCollection.ReplaceOne(context.TODO(), filter, replacement)
 	if err != nil {
 		return err
@@ -145,50 +132,28 @@ func replaceOne(usersCollection *mongo.Collection) error {
 }
 
 func deleteOne(usersCollection *mongo.Collection) error {
-	filter := bson.D{
-		{"$and",
-			bson.A{
-				bson.D{
-					{"age", bson.D{{"$gt", 28}}},
-				},
-			},
-		},
-	}
+	filter := primitive.M{"age": 5}
 	result, err := usersCollection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Number of documents deleted:", result.DeletedCount)
-
-	// // delete every document that match the filter
-	// results, err := usersCollection.DeleteMany(context.TODO(), filter)
-	// // check for errors in the deleting
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// // display the number of documents deleted
-	// fmt.Println("deleting every result from the search filter")
-	// fmt.Println("Number of documents deleted:", results.DeletedCount)
 	return nil
 }
 
 func DeleteMany(usersCollection *mongo.Collection) error {
-	filter := bson.D{
-		{"$and",
-			bson.A{
-				bson.D{
-					{"age", bson.D{{"$gt", 23}}},
-				},
-			},
-		},
-	}
+	filter := primitive.M{"age": primitive.M{"$gt": 3}}
 	results, err := usersCollection.DeleteMany(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println("Number of documents deleted:", results.DeletedCount)
 	return nil
+}
+
+func Count(usersCollection *mongo.Collection) (count int64, err error) {
+	filter := primitive.M{"age": primitive.M{"$gt": 2}}
+	return usersCollection.CountDocuments(context.TODO(), filter)
 }
 
 func main() {
@@ -204,7 +169,7 @@ func main() {
 	}
 
 	// use the collection of the database
-	usersCollection := client.Database("db01").Collection("coll01")
+	usersCollection := client.Database("db01").Collection("users")
 
 	// if err := insertOne(usersCollection); err != nil {
 	// 	fmt.Println("failed to insert data:", err)
@@ -215,6 +180,10 @@ func main() {
 	// }
 
 	// if err := readAll(usersCollection); err != nil {
+	// 	fmt.Println("failed to read:", err)
+	// }
+
+	// if err := readMany(usersCollection); err != nil {
 	// 	fmt.Println("failed to read:", err)
 	// }
 
@@ -234,8 +203,14 @@ func main() {
 	// 	fmt.Println("failed to deleteOne:", err)
 	// }
 
-	if err := DeleteMany(usersCollection); err != nil {
-		fmt.Println("failed to deleteOne:", err)
+	// if err := DeleteMany(usersCollection); err != nil {
+	// 	fmt.Println("failed to deleteOne:", err)
+	// }
+
+	count, err := Count(usersCollection)
+	if err != nil {
+		fmt.Println("failed to count", err)
 	}
+	fmt.Println("count:", count)
 
 }
