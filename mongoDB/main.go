@@ -17,6 +17,7 @@ type User struct {
 	Age     int        `json:"age" bson:"age"`
 	Address *Address   `json:"address" bson:"address,omitempty"`
 	Salary  int        `json:"salary" bson:"salary,omitempty"`
+	Money   int        `json:"money" bson:"money,omitempty"`
 	Date    *time.Time `json:"date" bson:"date"`
 }
 
@@ -24,6 +25,36 @@ type Address struct {
 	Country string `json:"country" bson:"country"`
 	City    string `json:"city" bson:"city"`
 }
+
+var Filter = []primitive.M{
+	{"name": "chen5"},           // one
+	{"name": "chen4", "age": 4}, // and
+
+	{"name": primitive.M{"$in": []string{"chen1", "chen2"}}}, // in
+	{"age": primitive.M{"$gt": 100}},                         // greater
+
+	{"age": primitive.M{"$not": 100}},                             // not
+	{"$and": []primitive.M{{"name": "chen1"}, {"age": 1}}},        // and
+	{"$or": []primitive.M{{"name": "chen1"}, {"name": "chen2"}}},  // or
+	{"$nor": []primitive.M{{"name": "chen1"}, {"name": "chen2"}}}, // nor
+
+	{"salary": primitive.M{"$exists": true}},
+	{"name": primitive.M{"$type": "string"}},
+	// {"$expr": primitive.M{"$gt": []string{"salary", "money"}}},
+}
+
+// $eq equality
+// $ne not equal
+// $gt greater
+// $gte greater and qeual
+// $lt less than
+// $lte less than and equal
+// $in include
+// $nin not include
+
+// $type
+// double, string, object, array, binData, undefined, objectId, bool, date, null
+// regex, dbPointer, javascript, symbol, javascriptWithScope, int, timestamp, long, decimal, minKey, maxKey
 
 func insertOne(usersCollection *mongo.Collection) error {
 	user := User{
@@ -40,9 +71,9 @@ func insertOne(usersCollection *mongo.Collection) error {
 
 func insertMany(usersCollection *mongo.Collection) error {
 	users := []interface{}{
-		User{Name: "chen4", Age: 4},
-		User{Name: "chen5", Age: 5},
-		User{Name: "chen6", Age: 6},
+		User{Name: "chen7", Age: 7, Salary: 1000, Money: 1100},
+		User{Name: "chen8", Age: 8, Salary: 1300, Money: 1200},
+		User{Name: "chen9", Age: 9, Salary: 1500, Money: 1600},
 	}
 
 	results, err := usersCollection.InsertMany(context.TODO(), users)
@@ -72,12 +103,12 @@ func readAll(usersCollection *mongo.Collection) error {
 }
 
 func readMany(usersCollection *mongo.Collection) error {
-	filter := primitive.M{"age": primitive.M{"$gt": 2}}
-	opt := options.Find()
-	opt.SetLimit(10)
-	opt.SetSkip(5)
+	filter := primitive.M{"age": primitive.M{"$gt": 100}}
+	// opt := options.Find()
+	// opt.SetLimit(10)
+	// opt.SetSkip(5)
 
-	cursor, err := usersCollection.Find(context.TODO(), filter, opt)
+	cursor, err := usersCollection.Find(context.TODO(), filter, nil)
 	if err != nil {
 		return err
 	}
@@ -190,13 +221,13 @@ func main() {
 	// 	fmt.Println("failed to read:", err)
 	// }
 
-	// if err := readMany(usersCollection); err != nil {
-	// 	fmt.Println("failed to read:", err)
-	// }
-
-	if err := readOne(usersCollection); err != nil {
+	if err := readMany(usersCollection); err != nil {
 		fmt.Println("failed to read:", err)
 	}
+
+	// if err := readOne(usersCollection); err != nil {
+	// 	fmt.Println("failed to read:", err)
+	// }
 
 	// if err := update(usersCollection); err != nil {
 	// 	fmt.Println("failed to update:", err)
