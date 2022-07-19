@@ -18,6 +18,7 @@ type User struct {
 	Address *Address   `json:"address" bson:"address,omitempty"`
 	Salary  int        `json:"salary" bson:"salary,omitempty"`
 	Money   int        `json:"money" bson:"money,omitempty"`
+	Kid     string     `json:"kid" bson:"kid,omitempty"`
 	Date    *time.Time `json:"date" bson:"date"`
 }
 
@@ -194,6 +195,21 @@ func Count(usersCollection *mongo.Collection) (count int64, err error) {
 	return usersCollection.CountDocuments(context.TODO(), filter)
 }
 
+func updateAppend(usersCollection *mongo.Collection) error {
+	filter := primitive.M{"name": "chen25"}
+
+	value := primitive.M{"$push": primitive.M{
+		"kid": "chen01",
+	}}
+
+	result, err := usersCollection.UpdateOne(context.TODO(), filter, value)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Number of documents updated:", result.ModifiedCount)
+	return nil
+}
+
 func main() {
 	// connect
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
@@ -221,9 +237,9 @@ func main() {
 	// 	fmt.Println("failed to read:", err)
 	// }
 
-	if err := readMany(usersCollection); err != nil {
-		fmt.Println("failed to read:", err)
-	}
+	// if err := readMany(usersCollection); err != nil {
+	// 	fmt.Println("failed to read:", err)
+	// }
 
 	// if err := readOne(usersCollection); err != nil {
 	// 	fmt.Println("failed to read:", err)
@@ -232,6 +248,10 @@ func main() {
 	// if err := update(usersCollection); err != nil {
 	// 	fmt.Println("failed to update:", err)
 	// }
+
+	if err := updateAppend(usersCollection); err != nil {
+		fmt.Println(err)
+	}
 
 	// if err := replaceOne(usersCollection); err != nil {
 	// 	fmt.Println("failed to replaceOne:", err)
@@ -251,4 +271,6 @@ func main() {
 	// }
 	// fmt.Println("count:", count)
 
+	// objID, err := primitive.ObjectIDFromHex(stringID)
+	// objID.Hex()
 }
