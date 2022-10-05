@@ -5,13 +5,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator"
 )
 
 type Product struct {
 	Name     string `json:"name"`
 	Price    int    `json:"price"`
 	Discount bool   `json:"discount"`
+	Soldout  *bool  `json:"soldout"`
+	Email    string `json:"email" binding:"required" validate:"email"`
 }
+
+var (
+	validate = validator.New()
+)
 
 func main() {
 	router := gin.Default()
@@ -58,8 +65,20 @@ func main() {
 	// post struct
 	router.POST("/product", func(ctx *gin.Context) {
 		var product Product
-		ctx.BindJSON(&product)
-		fmt.Println(product)
+		if err := ctx.BindJSON(&product); err != nil {
+			ctx.AbortWithError(http.StatusInternalServerError, err)
+			return
+		} else if err := validate.Struct(product); err != nil {
+			ctx.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+
+		fmt.Printf("%+v\n", product)
+
+		if product.Soldout == nil {
+		} else {
+			fmt.Println(*product.Soldout)
+		}
 		ctx.String(http.StatusOK, "ok")
 	})
 
