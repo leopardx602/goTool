@@ -3,67 +3,85 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/leopardx602/golang/read_write/read"
 )
 
-func main() {
-	// create and delete
-	os.Mkdir("folder01", 0777)
-	//os.MkdirAll("folder01/test1/test2", 0777)
-	//err := os.Remove("folder01")
-	err := os.RemoveAll("folder01")
+const (
+	Filename = "data"
+)
+
+func WriteFileAll(filename, content string) error {
+	err := os.WriteFile(filename, []byte(content), 0644)
 	if err != nil {
-		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func WriteFile(filename, content string) error {
+	// os.O_WRONLY	write only
+	// os.O_CREATE	create if not existed
+	// os.O_RDONLY	read only
+	// os.O_RDWR	read and write only
+	// os.O_TRUNC	clear
+	// os.O_APPEND	append
+	// os.Create(filename)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644) // cover
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	// file.Write([]byte(content))
+	file.WriteString(content)
+	return nil
+}
+
+func main() {
+	// content, err := read.ReadFileAll(Filename)
+	// if err != nil {
+	// 	fmt.Println("err")
+	// }
+	// fmt.Println(content)
+
+	// content, err := read.ReadFilePointer(Filename)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(content)
+
+	ch := make(chan []byte, 100)
+	go func() {
+		defer close(ch)
+		if err := read.ReadLineToChannel(Filename, ch); err != nil {
+			panic(err)
+		}
+	}()
+	for val := range ch {
+		fmt.Println(string(val))
 	}
 
-	//os.Create("test01.txt")
-
-	// read (fast)
-	// file, err := os.Open("test01.txt")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// defer file.Close()
-
-	// buf := make([]byte, 1024)
-	// for {
-	// 	n, _ := file.Read(buf)
-	// 	if n == 0 {
-	// 		break
-	// 	}
-	// 	os.Stdout.Write(buf[:n])
+	// if err := WriteFileAll(Filename, "444\n222\n333"); err != nil {
+	// 	panic(err)
 	// }
 
-	// read (slow, 3 times)
-	// fmt.Println(nowTime)
-	// inFile, err := ioutil.ReadFile("test01.txt")
-	// if err != nil {
-	// 	fmt.Print(err)
-	// }
-	// str := string(inFile)
-	// fmt.Println(str)
-
-	// write
-	// data := []byte("hello\ngo\n")
-	// err := ioutil.WriteFile("test01.txt", data, 0644)
-	// if err != nil {
-	// 	fmt.Println(err)
+	// if err := WriteFile(Filename, "111\n222\n333"); err != nil {
+	// 	panic(err)
 	// }
 
-	// write
-	// os.O_WRONLY	只寫
-	// os.O_CREATE	建立檔案
-	// os.O_RDONLY	只讀
-	// os.O_RDWR	讀寫
-	// os.O_TRUNC	清空
-	// os.O_APPEND	追加
-	// file, err := os.OpenFile("test01.txt", os.O_WRONLY|os.O_APPEND, 0644)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
+	// // create directory
+	// if err := os.Mkdir("folder01", 0777); err != nil {
+	// 	panic(err)
 	// }
-	// defer file.Close()
-	// data := "hello go\n"
-	// file.Write([]byte(data))
-	// file.WriteString(data)
+	// if err := os.MkdirAll("folder01/test1/test2/test3", 0777); err != nil {
+	// 	panic(err)
+	// }
+
+	// // remove directory
+	// if err := os.Remove("folder01"); err != nil {
+	// 	panic(err)
+	// }
+	// if err := os.RemoveAll("folder01"); err != nil {
+	// 	panic(err)
+	// }
 }

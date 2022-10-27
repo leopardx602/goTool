@@ -3,22 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-type Product struct {
-	Name     string `json:"name"`
-	Price    int    `json:"price"`
-	Discount bool   `json:"discount"`
-}
-
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.HTML(200, "index.html", gin.H{})
+		ctx.HTML(http.StatusOK, "index.html", gin.H{})
 	})
 
 	router.GET("/connect", func(ctx *gin.Context) {

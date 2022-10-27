@@ -17,6 +17,8 @@ var (
 	parseTime bool   = true // time.time or string
 )
 
+// sql.ErrNoRows
+
 type Product struct {
 	ID       int       `json:"id"`
 	Name     string    `json:"name"`
@@ -27,7 +29,7 @@ type Product struct {
 }
 
 func Create(conn *sql.DB) error {
-	sql := `CREATE TABlE IF NOT EXISTS table01(
+	sql := `CREATE TABLE IF NOT EXISTS table01(
 		id INT NOT NULL AUTO_INCREMENT,
 		name VARCHAR(16) NOT NULL DEFAULT "",
 		price INT DEFAULT 0,
@@ -36,6 +38,7 @@ func Create(conn *sql.DB) error {
 		updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		PRIMARY KEY (id)
 	);`
+	// CONSTRAINT id_name PRIMARY KEY (id, name)
 	_, err := conn.Query(sql)
 	if err != nil {
 		return err
@@ -76,10 +79,11 @@ func Select(conn *sql.DB, command string) error {
 }
 
 func Update(conn *sql.DB, product Product) error {
-	_, err := conn.Exec("UPDATE table01 SET name=?, price=?, image=? WHERE id=?", product.Name, product.Price, product.Image, product.ID) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
+	result, err := conn.Exec("UPDATE table01 SET name=?, price=?, image=? WHERE id=?", product.Name, product.Price, product.Image, product.ID) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
 	if err != nil {
 		return err
 	}
+	fmt.Println(result.RowsAffected())
 	return nil
 }
 
@@ -100,19 +104,19 @@ func main() {
 	defer conn.Close()
 
 	// create talble
-	// if err = Create(conn); err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	// insert
-	if err = Insert(conn, Product{ID: 2, Name: "iphone2", Price: 2000}); err != nil {
-		fmt.Println(err)
+	if err = Create(conn); err != nil {
+		panic(err)
 	}
 
-	// // update
-	// if err = Update(conn, Product{ID: 2, Name: "iphone2", Price: 3000}); err != nil {
+	// // insert
+	// if err = Insert(conn, Product{ID: 2, Name: "iphone2", Price: 2000}); err != nil {
 	// 	fmt.Println(err)
 	// }
+
+	// update
+	if err = Update(conn, Product{ID: 2, Name: "iphone2", Price: 2000}); err != nil {
+		fmt.Println(err)
+	}
 
 	// // delete
 	// if err = Delete(conn, 1); err != nil {
@@ -120,7 +124,7 @@ func main() {
 	// }
 
 	// select
-	if err = Select(conn, "SELECT * FROM table01"); err != nil {
+	if err = Select(conn, "SELECT * FROM table01"); err != nil { // SELECT COUNT(*)
 		fmt.Println(err)
 	}
 
