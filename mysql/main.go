@@ -46,6 +46,19 @@ func Create(conn *sql.DB) error {
 	return nil
 }
 
+func CreateEvent(conn *sql.DB) error {
+	sql := `CREATE EVENT IF NOT EXISTS event01
+		ON SCHEDULE EVERY 10 SECOND
+		ON COMPLETION PRESERVE
+		DO
+	  	delete from table01 where TO_SECONDS(now())-TO_SECONDS(created_at)>120;`
+	_, err := conn.Query(sql)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func Insert(conn *sql.DB, product Product) error {
 	_, err := conn.Exec("INSERT INTO table01 (id, name, price) VALUES (?, ?, ?)", product.ID, product.Name, product.Price) //("INSERT INTO user_info (name, age) VALUES (?, ?)","syhlion",18,)
 	if err != nil {

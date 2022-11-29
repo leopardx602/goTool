@@ -2,9 +2,14 @@ package read
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 )
+
+type User struct {
+	Name string `json:"name"`
+}
 
 // slow
 func ReadFileAll(filename string) (content string, err error) {
@@ -72,4 +77,25 @@ func ReadLineToChannel(filename string, ch chan []byte) error {
 		}
 	}
 	return nil
+}
+
+func ReadJson(filename string) (user *User, err error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	user = &User{}
+	return user, json.NewDecoder(file).Decode(&user)
+}
+
+func ReadJson2(filename string) (user *User, err error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	user = &User{}
+	return user, json.Unmarshal(data, &user)
 }
