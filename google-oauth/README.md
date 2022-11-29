@@ -4,19 +4,19 @@
 https://console.developers.google.com/
 
 ### 2. 建立專案
-![image](picture or gif url)
-![image](picture or gif url)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img01.png)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img02.png)
 
 ### 3. OAuth 同意畫面
-![image](picture or gif url)
-![image](picture or gif url)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img03.png)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img04.png)
 
 ### 4. 建立憑證
-![image](picture or gif url)
-![image](picture or gif url)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img05.png)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img06.png)
 
 ### 5. 儲存用戶端ID與用戶端密碼
-![image](picture or gif url)
+![image](https://github.com/leopardx602/golang/blob/master/google-oauth/img/img07.png)
 
 ## 參考文件
 - Google API Console:
